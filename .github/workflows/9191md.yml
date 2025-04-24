@@ -26,6 +26,12 @@ jobs:
       run: |
         python 9191md.py  # 运行抓取视频数据的 Python 脚本
 
+    - name: Run scraper script
+      run: |
+        python lziapi.py  # 运行抓取视频数据的 Python 脚本
+
+
+
     - name: Configure Git for commit
       run: |
         git config --global user.name 'GitHub Actions'
