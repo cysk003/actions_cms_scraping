@@ -1,13 +1,12 @@
 name: 9191md
 
-# 设置工作流触发条件
+# 手动触发工作流
 on:
-  push:
-    branches:
-      - main  # 可以根据需要更改为你想要触发的分支
-  pull_request:
-    branches:
-      - main  # 在 PR 合并时触发
+  workflow_dispatch:  # 手动触发工作流
+  
+  # 定时触发工作流（每天运行一次）
+  schedule:
+    - cron: '0 0 * * *'  # 每天 UTC 时间 00:00 触发一次，你可以根据需要修改时间（参见 cron 表达式）
 
 jobs:
   scraper:
@@ -46,4 +45,3 @@ jobs:
       env:
         # GitHub token 是自动提供的，你可以用来推送代码到仓库
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
