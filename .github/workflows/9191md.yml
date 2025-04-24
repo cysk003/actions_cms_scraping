@@ -1,0 +1,49 @@
+name: 9191md
+
+# 设置工作流触发条件
+on:
+  push:
+    branches:
+      - main  # 可以根据需要更改为你想要触发的分支
+  pull_request:
+    branches:
+      - main  # 在 PR 合并时触发
+
+jobs:
+  scraper:
+    runs-on: ubuntu-latest  # 使用 Ubuntu 环境
+    
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v2  # 获取代码
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'  # 设置 Python 版本
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests  # 安装所需的请求库
+
+    - name: Run scraper script
+      run: |
+        # 将你的 Python 脚本保存在仓库中的某个位置
+        python your_script.py  # 运行抓取视频数据的 Python 脚本
+
+    - name: Configure Git for commit
+      run: |
+        git config --global user.name 'GitHub Actions'
+        git config --global user.email 'your-email@example.com'  # 设置 Git 用户信息
+
+    - name: Commit and push the files
+      run: |
+        # 将抓取到的文件添加到 git 并提交
+        git add *.txt  # 假设抓取到的文件是 .txt 格式
+        git commit -m "Add scraped video data files"
+        git push
+      env:
+        # GitHub token 是自动提供的，你可以用来推送代码到仓库
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
