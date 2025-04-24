@@ -7,7 +7,7 @@ TYPE_ID = ""  # 可选类型ID（如“10”表示“乌鸦传媒”）
 
 BASE_URL = "http://www.9191md.me/api.php/provide/vod/"
 PAGE = 1
-MAX_PAGE = 1000
+MAX_PAGE = 10
 
 # 提取主域名（去掉协议部分，提取主机名）
 parsed_url = urlparse(BASE_URL)
