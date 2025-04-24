@@ -2,7 +2,7 @@ name: lziapi
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * *'  # 每天 UTC 时间 00:00
+    - cron: '1 0 * * *'  # 每天 UTC 时间 00:00
 
 jobs:
   scraper:
