@@ -35,6 +35,6 @@ jobs:
       run: |
         git add *.txt
         git commit -m "Add scraped video data files"
-        git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:main
+        git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:master
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
