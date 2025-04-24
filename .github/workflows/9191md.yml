@@ -34,7 +34,7 @@ jobs:
     - name: Configure Git for commit
       run: |
         git config --global user.name 'GitHub Actions'
-        git config --global user.email 'your-email@example.com'  # 设置 Git 用户信息
+        git config --global user.email 'cysk003@126.com'  # 设置 Git 用户信息
 
     - name: Commit and push the files
       run: |
