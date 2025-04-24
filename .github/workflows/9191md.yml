@@ -30,7 +30,7 @@ jobs:
     - name: Run scraper script
       run: |
         # 将你的 Python 脚本保存在仓库中的某个位置
-        python your_script.py  # 运行抓取视频数据的 Python 脚本
+        python 9191md.py  # 运行抓取视频数据的 Python 脚本
 
     - name: Configure Git for commit
       run: |
