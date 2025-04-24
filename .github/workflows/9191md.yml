@@ -1,5 +1,4 @@
 name: 9191md
-
 on:
   workflow_dispatch:
   schedule:
@@ -30,12 +29,12 @@ jobs:
     - name: Configure Git for commit
       run: |
         git config --global user.name 'GitHub Actions'
-        git config --global user.email 'cysk003@126.com'
+        git config --global user.email 'your-email@example.com'
 
     - name: Commit and push the files
       run: |
         git add *.txt
         git commit -m "Add scraped video data files"
-        git push https://${{ secrets.MY_PAT }}@github.com/${{ github.repository }} HEAD:main
+        git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:main
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
