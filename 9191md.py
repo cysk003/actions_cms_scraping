@@ -37,7 +37,12 @@ def main():
             for item in data['list']:
                 type_name = item['type_name']  # 获取分类
                 vod_name = item['vod_name']  # 获取视频名称
-                play_url = item['vod_play_url'].split('$')[1]  # 获取播放地址
+                play_url = item['vod_play_url']
+                
+                # 检查 play_url 是否包含 "$"
+                if '$' in play_url:
+                    play_url = play_url.split('$')[1]  # 获取播放地址
+                # 如果没有 '$' 字符，则直接使用原始的 vod_play_url
 
                 # 将数据按分类整理
                 if type_name not in all_data:
