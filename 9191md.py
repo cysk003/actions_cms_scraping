@@ -73,4 +73,9 @@ def save_grouped_to_file(grouped_data, filename):
         for type_name, items in grouped_data.items():
             f.write(f"{type_name}, #genre#\n")
             for line in items:
-                f.write(f"{line}\n
+                f.write(f"{line}\n")  # 修复了这里的引号问题
+            f.write("\n")
+    print(f"✅ 已保存到文件：{filename}")
+
+def main():
+    #
