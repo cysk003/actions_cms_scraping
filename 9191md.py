@@ -1,80 +1,52 @@
 import requests
 import json
 
-# 设置采集源 URL
-url = "http://www.9191md.me/api.php/provide/vod/"
-
-def fetch_data(page=1):
-    """ 获取指定页的数据 """
+# 获取视频数据
+def fetch_video_data(api_url, page):
     params = {
-        "ac": "videolist",  # 数据请求的接口类型
-        "pg": page,         # 页码
-        "limit": 30          # 每页的条目数
+        'ac': 'videolist',
+        'pg': page,
+        'limit': 30  # 每页数据
     }
+    response = requests.get(api_url, params=params)
+    data = response.json()
+    return data
 
-    print(f"正在请求第 {page} 页...")
-    try:
-        response = requests.get(url, params=params)
-        data = response.json()
-
-        # 检查响应是否成功
-        if response.status_code == 200 and data.get("code") == 1:
-            print(f"成功获取第 {page} 页的数据")
-            return data['list'], data['pagecount']  # 返回数据和总页数
-        else:
-            print(f"第 {page} 页请求失败，状态码: {response.status_code}")
-            return None, None
-    except Exception as e:
-        print(f"请求发生异常: {e}")
-        return None, None
-
-def save_data(source_name, data):
-    """ 保存抓取到的数据到文件 """
-    print(f"正在保存 {source_name} 数据...")
-    file_name = f"{source_name}.txt"
+# 保存数据到文件
+def save_data(file_name, all_data):
     with open(file_name, "w", encoding="utf-8") as f:
-        for entry in data:
-            vod_name = entry['vod_name']
-            play_url = entry['vod_play_url']
-            
-            # 处理包含 "第01集" 等标识符的情况
-            if '第' in vod_name:
-                # 如果播放地址中包含 $，拼接标题和播放地址
-                if '$' in play_url:
-                    vod_name = f"{vod_name} {play_url.split('$')[1]}"  # 拼接标题和播放地址
-                else:
-                    vod_name = f"{vod_name} {play_url}"  # 直接使用播放地址
-            
-            # 保存文件
-            f.write(f"{vod_name}\n")
-    print(f"数据已保存到 {file_name}")
+        for type_name, videos in all_data.items():
+            f.write(f"{type_name}, #genre#\n")  # 写入分类
+            for vod_name, play_url in videos:
+                f.write(f"{vod_name} {play_url}\n")  # 写入视频名称和播放地址
 
+# 主函数
 def main():
-    print("开始抓取 www.9191md.me 数据...")
-    all_data = []
+    api_url = 'http://www.9191md.me/api.php/provide/vod/'
+    all_data = {}
     
-    # 获取第1页数据并获取总页数
-    page_data, total_pages = fetch_data(1)
-    if not page_data:
-        print("无法获取数据，程序结束。")
-        return
-
-    print(f"总页数: {total_pages}")
-
-    # 遍历所有页并抓取数据
+    # 假设每个源最多有 670 页
+    total_pages = 670
+    print(f"开始抓取 {api_url} 数据...")
+    
     for page in range(1, total_pages + 1):
         print(f"正在抓取第 {page} 页...")
-        page_data, _ = fetch_data(page)
-        if page_data:
-            all_data.extend(page_data)  # 将数据添加到总数据列表
-        else:
-            print(f"第 {page} 页没有数据，跳过。")
-    
-    # 保存所有抓取到的数据
-    if all_data:
-        save_data("www.9191md.me", all_data)
-    else:
-        print("没有抓取到有效数据。")
+        data = fetch_video_data(api_url, page)
+        
+        if data['code'] == 1:
+            for item in data['list']:
+                type_name = item['type_name']  # 获取分类
+                vod_name = item['vod_name']  # 获取视频名称
+                play_url = item['vod_play_url'].split('$')[1]  # 获取播放地址
+
+                # 将数据按分类整理
+                if type_name not in all_data:
+                    all_data[type_name] = []
+                all_data[type_name].append((vod_name, play_url))
+        
+    # 保存数据到文件
+    save_data("www.9191md.me.txt", all_data)
+    print(f"{api_url} 数据已保存到 www.9191md.me.txt")
 
 if __name__ == "__main__":
     main()
