@@ -12,11 +12,14 @@ def fetch_all_pages(base_url, base_params):
     result = {}
     total_pages = None
 
+    print(f"开始采集：{base_url}")
+    
     while True:
         params = base_params.copy()
         params["pg"] = page
 
         try:
+            print(f"→ 正在请求第 {page} 页...")
             response = requests.get(base_url, params=params, timeout=10)
             response.raise_for_status()  # 如果请求失败，会引发异常
             data = response.json()
@@ -34,8 +37,12 @@ def fetch_all_pages(base_url, base_params):
 
         if total_pages is None:
             total_pages = data.get("pagecount", 1)
+            print(f"总页数：{total_pages}")
 
-        for item in data["list"]:
+        page_items = data["list"]
+        print(f"→ 正在采集第 {page}/{total_pages} 页，共 {len(page_items)} 项数据")
+
+        for item in page_items:
             type_name = item.get("type_name", "未知分类")
             vod_name = item.get("vod_name", "未命名")
             vod_play_url = item.get("vod_play_url", "")
@@ -66,24 +73,4 @@ def save_grouped_to_file(grouped_data, filename):
         for type_name, items in grouped_data.items():
             f.write(f"{type_name}, #genre#\n")
             for line in items:
-                f.write(f"{line}\n")
-            f.write("\n")
-    print(f"✅ 已保存到文件：{filename}")
-
-def main():
-    # 修改这里为你的 CMS 播放源地址
-    base_url = "http://www.9191md.me/api.php/provide/vod/"
-    base_params = {
-        "ac": "videolist",  # 修改为 'videolist' 以匹配你的接口
-        "type": "",  # 可指定分类 ID，不填为全部
-        "pg": 1
-    }
-
-    print(f"开始采集：{base_url}")
-    grouped_data = fetch_all_pages(base_url, base_params)
-    domain = get_domain(base_url)
-    filename = f"{domain}.txt"
-    save_grouped_to_file(grouped_data, filename)
-
-if __name__ == "__main__":
-    main()
+                f.write(f"{line}\n
