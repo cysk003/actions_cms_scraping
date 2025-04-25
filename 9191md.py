@@ -1,60 +1,57 @@
-import os
-import json
 import requests
+import json
 
-def scrape_videos(url, headers=None):
-    """抓取视频数据并返回"""
-    response = requests.get(url, headers=headers)
-    data = response.json()  # 解析返回的JSON数据
-    return data
+# 设置采集源
+url = "http://www.9191md.me/api.php/provide/vod/"
 
-def process_vod_data(data):
-    """处理视频数据并生成结果"""
-    videos = []
+def fetch_data(page=1):
+    params = {
+        "ac": "videolist",  # 数据请求的接口类型
+        "pg": page,         # 页码
+        "limit": 30          # 每页的条目数
+    }
 
-    for item in data.get('list', []):
-        # 获取视频名称
-        vod_name = item.get("vod_name", "").strip()
-        vod_play_url = item.get("vod_play_url", "")
-        
-        # 处理播放地址（将“第01集”部分保留，添加播放地址）
-        if "第" in vod_name and "集" in vod_name:
-            video_line = f"{vod_name} {vod_play_url}"
-        else:
-            video_line = f"{vod_name} {vod_play_url}"
-        
-        videos.append(video_line)
+    print(f"正在请求第 {page} 页...")
+    response = requests.get(url, params=params)
+    data = response.json()
+    
+    if response.status_code == 200 and data.get("code") == 1:
+        print(f"成功获取第 {page} 页的数据，解析中...")
+        return data['list']
+    else:
+        print(f"第 {page} 页请求失败，状态码: {response.status_code}")
+        return None
 
-    return videos
-
-def save_to_file(videos, domain_name):
-    """保存结果到文本文件"""
-    filename = f"{domain_name}.txt"  # 使用主域名命名文件
-    with open(filename, "w", encoding="utf-8") as f:
-        f.write(f"{domain_name}, #genre#\n")  # 写入文件头部
-        for video in videos:
-            f.write(f"{video}\n")  # 写入每个视频的名称和播放地址
+def save_data(source_name, data):
+    print(f"正在保存 {source_name} 数据...")
+    file_name = f"{source_name}.txt"
+    with open(file_name, "w", encoding="utf-8") as f:
+        for entry in data:
+            vod_name = entry['vod_name']
+            play_url = entry['vod_play_url']
+            # 确保标题和链接拼接正确
+            if '第' in vod_name:
+                vod_name = f"{vod_name} {play_url.split('$')[1]}"  # 拼接标题和播放地址
+            f.write(f"{vod_name}\n")
+    print(f"数据已保存到 {file_name}")
 
 def main():
-    sources = [
-        {"url": "http://www.9191md.me/api.php/provide/vod/", "domain": "www.9191md.me"}
-        # 你可以在这里添加其他的源
-    ]
-
-    for source in sources:
-        url = source["url"]
-        domain_name = source["domain"]
-
-        print(f"开始抓取 {domain_name} 数据...")
-
-        # 发起请求并处理数据
-        data = scrape_videos(url)
-        videos = process_vod_data(data)
-
-        # 将数据保存到文件
-        save_to_file(videos, domain_name)
-
-        print(f"{domain_name} 数据已保存到 {domain_name}.txt")
+    print("开始抓取 www.9191md.me 数据...")
+    all_data = []
+    
+    # 设置需要抓取的总页数
+    total_pages = 5  # 例如抓取5页，可以根据实际情况设置
+    
+    for page in range(1, total_pages + 1):
+        page_data = fetch_data(page)
+        if page_data:
+            all_data.extend(page_data)  # 将数据添加到总数据列表
+    
+    # 保存数据
+    if all_data:
+        save_data("www.9191md.me", all_data)
+    else:
+        print("没有抓取到有效数据。")
 
 if __name__ == "__main__":
     main()
