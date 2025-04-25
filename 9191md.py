@@ -39,8 +39,12 @@ def save_data(source_name, data):
             
             # 处理包含 "第01集" 等标识符的情况
             if '第' in vod_name:
-                vod_name = f"{vod_name} {play_url.split('$')[1]}"  # 拼接标题和播放地址
-
+                # 如果播放地址中包含 $，拼接标题和播放地址
+                if '$' in play_url:
+                    vod_name = f"{vod_name} {play_url.split('$')[1]}"  # 拼接标题和播放地址
+                else:
+                    vod_name = f"{vod_name} {play_url}"  # 直接使用播放地址
+            
             # 保存文件
             f.write(f"{vod_name}\n")
     print(f"数据已保存到 {file_name}")
