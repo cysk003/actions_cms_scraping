@@ -1,79 +1,90 @@
-import json
 import requests
-from urllib.parse import urlparse
+import json
+import os
 
-def get_domain(url):
-    return urlparse(url).netloc
+# 配置源，包含多个网站的API地址
+sources = [
+    {"name": "www.9191md.me", "url": "http://www.9191md.me/api.php/provide/vod/"},
+    {"name": "apiyutu.com", "url": "https://apiyutu.com/api.php/provide/vod/"},
+    # 添加更多源
+]
 
-def fetch_all_pages(source_url, base_params):
-    """抓取所有分页数据并记录日志"""
+def save_data(source_name, all_data):
+    """保存数据到文件"""
+    file_name = f"{source_name}.txt"
+    with open(file_name, "w", encoding="utf-8") as f:
+        for category, data in all_data.items():
+            # 类别名称
+            f.write(f"{category}, #genre#\n")
+            for line in data:
+                vod_name, play_url = line
+                # 确保名称与播放地址之间有一个逗号和空格
+                f.write(f"{vod_name}, {play_url}\n")
+
+def fetch_data_from_source(source_name, api_url):
+    """从指定的API源抓取数据"""
+    all_data = {}
     page = 1
-    result = {}
-    total_pages = None
 
     while True:
-        params = base_params.copy()
-        params["pg"] = page
-        try:
-            response = requests.get(source_url, params=params, timeout=10)
-            data = response.json()
-        except Exception as e:
-            print(f"[错误] 第 {page} 页请求失败：{e}")
+        # 请求参数
+        params = {
+            "ac": "videolist",  # 请求的视频列表
+            "pg": page,         # 当前页数
+            "limit": "30",      # 每页数量
+        }
+
+        print(f"正在抓取 {source_name} 第 {page} 页...")
+        response = requests.get(api_url, params=params)
+
+        if response.status_code != 200:
+            print(f"请求失败，状态码：{response.status_code}")
             break
 
-        if data.get("code") != 1 or "list" not in data:
-            print(f"[警告] 第 {page} 页数据无效，停止采集")
+        data = response.json()
+
+        if data["code"] != 1:
+            print(f"数据获取失败，错误信息：{data['msg']}")
             break
 
-        if total_pages is None:
-            total_pages = data.get("pagecount", 1)
-            print(f"  ↳ 总页数：{total_pages}")
-
-        print(f"    → 正在采集第 {page}/{total_pages} 页，共 {len(data['list'])} 项")
+        total_pages = data["pagecount"]
+        print(f"总页数：{total_pages}")
 
         for item in data["list"]:
-            type_name = item.get("type_name", "未知分类")
-            vod_name = item.get("vod_name", "无名")
-            play_urls = item.get("vod_play_url", "").split("#")
-            for play in play_urls:
-                if "$" in play:
-                    name, url = play.split("$", 1)
-                else:
-                    name, url = vod_name, play
-                result.setdefault(type_name, []).append(f"{name}, {url}")
+            # 获取分类名称
+            category = item['type_name']
+            vod_name = item['vod_name']
+            play_url = item['vod_play_url']
 
-        if page >= total_pages:
-            break
+            # 处理播放地址，确保提取正确
+            if '$' in play_url:
+                play_url = play_url.split('$')[1]
+            # 如果有标识符（如"第01集"），则拼接名称和播放地址
+            if '第' in vod_name:
+                vod_name = f"{vod_name} {play_url}"
+
+            if category not in all_data:
+                all_data[category] = []
+
+            all_data[category].append((vod_name, play_url))
+
         page += 1
 
-    # 日志输出每个分类多少条数据
-    print("  ↳ 分类统计：")
-    for type_name, items in result.items():
-        print(f"    • {type_name}: {len(items)} 条")
+        if page > total_pages:  # 如果抓取完所有页
+            break
 
-    return result
-
-def save_to_file(data_by_type, filename):
-    with open(filename, "w", encoding="utf-8") as f:
-        for type_name, items in data_by_type.items():
-            f.write(f"{type_name}, #genre#\n")
-            for line in items:
-                f.write(f"{line}\n")
-            f.write("\n")
+    return all_data
 
 def main():
-    with open("sources_config.json", "r", encoding="utf-8") as f:
-        sources = json.load(f)["sources"]
-
+    """主程序，抓取所有源的数据并保存"""
     for source in sources:
-        url = source["url"]
-        base_params = source.get("params", {})
-        print(f"\n开始采集源：{url}")
-        grouped_data = fetch_all_pages(url, base_params)
-        domain = get_domain(url)
-        filename = f"{domain}.txt"
-        save_to_file(grouped_data, filename)
-        print(f"完成保存文件：{filename}")
+        source_name = source["name"]
+        api_url = source["url"]
+        print(f"开始抓取 {source_name} 数据...")
+        all_data = fetch_data_from_source(source_name, api_url)
+        print(f"{source_name} 数据抓取完毕，正在保存...")
+        save_data(source_name, all_data)
+        print(f"{source_name} 数据已保存到 {source_name}.txt\n")
 
 if __name__ == "__main__":
     main()
