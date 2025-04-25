@@ -38,15 +38,21 @@ def fetch_all_pages(base_url, base_params):
             vod_name = item.get("vod_name", "未命名")
             vod_play_url = item.get("vod_play_url", "")
 
+            if not vod_play_url.strip():
+                continue  # 无播放地址跳过
+
             entries = []
             for part in vod_play_url.split("#"):
                 if "$" in part:
                     name, url = part.split("$", 1)
                 else:
                     name, url = vod_name, part
-                entries.append(f"{name}, {url}")
 
-            result.setdefault(type_name, []).extend(entries)
+                if url.strip():
+                    entries.append(f"{name}, {url}")
+
+            if entries:
+                result.setdefault(type_name, []).extend(entries)
 
         if page >= total_pages:
             break
@@ -66,14 +72,14 @@ def save_grouped_to_file(grouped_data, filename):
             for line in items:
                 f.write(f"{line}\n")
             f.write("\n")
-    print(f"已保存到文件：{filename}")
+    print(f"✅ 已保存到文件：{filename}")
 
 def main():
-    # 🔧 你的源地址和参数配置在这里
+    # ✅ 修改这里为你的 CMS 播放源地址
     base_url = "http://www.9191md.me/api.php/provide/vod/"
     base_params = {
         "ac": "list",
-        "type": "",  # 可指定类型 ID，不填为全部
+        "type": "",  # 可指定分类 ID，不填为全部
         "pg": 1
     }
 
