@@ -1,81 +1,87 @@
 import requests
-import time
-import os
 from urllib.parse import urlparse
+import os
 
-TYPE_ID = ""  # 可选类型ID（如“10”表示“乌鸦传媒”）
+def get_domain(url):
+    """提取主域名作为文件名"""
+    return urlparse(url).netloc
 
-BASE_URL = "http://www.9191md.me/api.php/provide/vod/"
-PAGE = 1
-MAX_PAGE = 1000
+def fetch_all_pages(base_url, base_params):
+    """分页抓取所有视频并按类型分类"""
+    page = 1
+    result = {}
+    total_pages = None
 
-# 提取主域名（去掉协议部分，提取主机名）
-parsed_url = urlparse(BASE_URL)
-domain_name = parsed_url.netloc  # 例如 "www.9191md.me"
-print(f"抓取的主域名是：{domain_name}")
+    while True:
+        params = base_params.copy()
+        params["pg"] = page
 
-print("开始抓取播放数据...")
-
-# 打开文件用于写入
-while PAGE <= MAX_PAGE:
-    url = f"{BASE_URL}?ac=videolist&pg={PAGE}"
-    if TYPE_ID:
-        url += f"&t={TYPE_ID}"
-
-    print(f"正在抓取第 {PAGE} 页: {url}")
-
-    try:
-        response = requests.get(url, timeout=10)
-        data = response.json()
-        vod_list = data.get('list', [])
-
-        if not vod_list:
-            print("✅ 没有更多数据了，抓取结束。")
+        try:
+            response = requests.get(base_url, params=params, timeout=10)
+            data = response.json()
+        except Exception as e:
+            print(f"[错误] 第 {page} 页请求失败：{e}")
             break
 
-        # 用字典来分类不同类型
-        site_vod_map = {}
+        if data.get("code") != 1 or "list" not in data:
+            print(f"[警告] 第 {page} 页返回无效数据，停止采集")
+            break
 
-        # 遍历每个视频
-        for vod in vod_list:
-            type_name = vod.get('type_name', '未知类型')
-            vod_name = vod.get('vod_name', '未知片名')
-            play_data = vod.get('vod_play_url', '')
-            play_items = play_data.split('#')
-            site_name = vod.get('vod_play_from', '未知网站')  # 使用网站名称作为文件名
+        if total_pages is None:
+            total_pages = data.get("pagecount", 1)
+            print(f"总页数：{total_pages}")
 
-            # 将视频数据按类型分组
-            if site_name not in site_vod_map:
-                site_vod_map[site_name] = {}
+        print(f"→ 正在采集第 {page}/{total_pages} 页，共 {len(data['list'])} 项")
 
-            if type_name not in site_vod_map[site_name]:
-                site_vod_map[site_name][type_name] = []
+        for item in data["list"]:
+            type_name = item.get("type_name", "未知分类")
+            vod_name = item.get("vod_name", "未命名")
+            vod_play_url = item.get("vod_play_url", "")
 
-            for item in play_items:
-                parts = item.split('$')
-                if len(parts) == 2:
-                    title, url = parts
+            entries = []
+            for part in vod_play_url.split("#"):
+                if "$" in part:
+                    name, url = part.split("$", 1)
                 else:
-                    title = "播放"
-                    url = parts[0]
-                site_vod_map[site_name][type_name].append(f"{vod_name}, {url.strip()}")
+                    name, url = vod_name, part
+                entries.append(f"{name}, {url}")
 
-        # 为每个网站创建一个文件，并按类别保存数据
-        for site_name, type_map in site_vod_map.items():
-            file_name = f"{domain_name}.txt"  # 文件名使用主域名
-            with open(file_name, "w", encoding="utf-8") as f:
-                for type_name, vods in type_map.items():
-                    f.write(f"{type_name}, #genre#\n")
-                    for vod in vods:
-                        f.write(f"{vod}\n")
-                    f.write("\n")  # 每个类别后加一个空行
-            print(f"数据已保存到 {file_name}")
+            result.setdefault(type_name, []).extend(entries)
 
-        PAGE += 1
-        time.sleep(1)  # 延迟1秒，防止请求过快
+        if page >= total_pages:
+            break
+        page += 1
 
-    except Exception as e:
-        print(f"❌ 第 {PAGE} 页抓取失败: {e}")
-        break
+    print("分类汇总：")
+    for cat, items in result.items():
+        print(f"  • {cat}: {len(items)} 条")
 
-print("✅ 数据抓取并保存完毕！每个网站的数据已保存到对应的文件中。")
+    return result
+
+def save_grouped_to_file(grouped_data, filename):
+    """保存为文本文件，分类整理"""
+    with open(filename, "w", encoding="utf-8") as f:
+        for type_name, items in grouped_data.items():
+            f.write(f"{type_name}, #genre#\n")
+            for line in items:
+                f.write(f"{line}\n")
+            f.write("\n")
+    print(f"已保存到文件：{filename}")
+
+def main():
+    # 🔧 你的源地址和参数配置在这里
+    base_url = "http://www.9191md.me/api.php/provide/vod/"
+    base_params = {
+        "ac": "list",
+        "type": "",  # 可指定类型 ID，不填为全部
+        "pg": 1
+    }
+
+    print(f"开始采集：{base_url}")
+    grouped_data = fetch_all_pages(base_url, base_params)
+    domain = get_domain(base_url)
+    filename = f"{domain}.txt"
+    save_grouped_to_file(grouped_data, filename)
+
+if __name__ == "__main__":
+    main()
