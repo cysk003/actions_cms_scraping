@@ -103,7 +103,7 @@ def main():
     # ✅ 修改这里为你的 CMS 播放源地址
     base_url = "http://www.9191md.me/api.php/provide/vod/"
     base_params = {
-        "ac": "list",
+        "ac": "videolist",  # 修改为 'videolist' 以匹配你的接口
         "type": "",  # 可指定分类 ID，不填为全部
         "pg": 1
     }
