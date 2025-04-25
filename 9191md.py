@@ -5,7 +5,7 @@ import os
 # 配置源，包含多个网站的API地址
 sources = [
     {"name": "www.9191md.me", "url": "http://www.9191md.me/api.php/provide/vod/"},
-    {"name": "www.anotherexample.com", "url": "http://cj.lziapi.com/api.php/provide/vod/"},
+    {"name": "cj.lziapi.com", "url": "http://cj.lziapi.com/api.php/provide/vod/"},
     # 添加更多源
 ]
 
