@@ -1,0 +1,20 @@
+{
+    "sources": [
+      {
+        "url": "http://www.9191md.me/api.php/provide/vod/",
+        "params": {
+          "ac": "list",
+          "type": "",       // 可选类型id
+          "pg": 1
+        }
+      },
+      {
+        "url": "http://cj.lziapi.com/api.php/provide/vod/",
+        "params": {
+          "ac": "list",
+          "pg": 1
+        }
+      }
+    ]
+  }
+  
