@@ -1,64 +1,90 @@
 import requests
 import json
+import os
 
-# 获取视频数据
-def fetch_video_data(api_url, page):
-    params = {
-        'ac': 'videolist',
-        'pg': page,
-        'limit': 30  # 每页数据
-    }
-    response = requests.get(api_url, params=params)
-    data = response.json()
-    return data
+# 配置源，包含多个网站的API地址
+sources = [
+    {"name": "www.9191md.me", "url": "http://www.9191md.me/api.php/provide/vod/"},
+    {"name": "www.anotherexample.com", "url": "http://cj.lziapi.com/api.php/provide/vod/"},
+    # 添加更多源
+]
 
-# 保存数据到文件
-def save_data(file_name, all_data):
+def save_data(source_name, all_data):
+    """保存数据到文件"""
+    file_name = f"{source_name}.txt"
     with open(file_name, "w", encoding="utf-8") as f:
-        for type_name, videos in all_data.items():
-            f.write(f"{type_name}, #genre#\n")  # 写入分类
-            for vod_name, play_url in videos:
-                f.write(f"{vod_name} {play_url}\n")  # 写入视频名称和播放地址
+        for category, data in all_data.items():
+            # 类别名称
+            f.write(f"{category}, #genre#\n")
+            for line in data:
+                vod_name, play_url = line
+                # 确保名称与播放地址之间有一个逗号和空格
+                f.write(f"{vod_name}, {play_url}\n")
 
-# 主函数
-def main():
-    api_url = 'http://www.9191md.me/api.php/provide/vod/'
+def fetch_data_from_source(source_name, api_url):
+    """从指定的API源抓取数据"""
     all_data = {}
-    
-    # 假设每个源最多有 670 页
-    total_pages = 670
-    print(f"开始抓取 {api_url} 数据...")
-    
-    for page in range(1, total_pages + 1):
-        print(f"正在抓取第 {page} 页...")
-        data = fetch_video_data(api_url, page)
-        
-        if data['code'] == 1:
-            for item in data['list']:
-                type_name = item['type_name']  # 获取分类
-                vod_name = item['vod_name']  # 获取视频名称
-                play_url = item.get('vod_play_url', '')  # 获取播放地址，如果没有则返回空字符串
-                
-                # 确保 play_url 有效
-                if play_url:
-                    if '$' in play_url:
-                        # 提取视频名称和播放地址
-                        vod_name = f"{vod_name} {play_url.split('$')[0]}"  # 拼接标题和集名
-                        play_url = play_url.split('$')[1]  # 获取播放地址
-                    else:
-                        # 如果没有 '$' 字符，则直接使用原始的 vod_play_url
-                        play_url = play_url
-                else:
-                    play_url = '无播放地址'  # 如果没有播放地址，填充默认文本
+    page = 1
 
-                # 将数据按分类整理
-                if type_name not in all_data:
-                    all_data[type_name] = []
-                all_data[type_name].append((vod_name, play_url))
-        
-    # 保存数据到文件
-    save_data("www.9191md.me.txt", all_data)
-    print(f"{api_url} 数据已保存到 www.9191md.me.txt")
+    while True:
+        # 请求参数
+        params = {
+            "ac": "videolist",  # 请求的视频列表
+            "pg": page,         # 当前页数
+            "limit": "30",      # 每页数量
+        }
+
+        print(f"正在抓取 {source_name} 第 {page} 页...")
+        response = requests.get(api_url, params=params)
+
+        if response.status_code != 200:
+            print(f"请求失败，状态码：{response.status_code}")
+            break
+
+        data = response.json()
+
+        if data["code"] != 1:
+            print(f"数据获取失败，错误信息：{data['msg']}")
+            break
+
+        total_pages = data["pagecount"]
+        print(f"总页数：{total_pages}")
+
+        for item in data["list"]:
+            # 获取分类名称
+            category = item['type_name']
+            vod_name = item['vod_name']
+            play_url = item['vod_play_url']
+
+            # 处理播放地址，确保提取正确
+            if '$' in play_url:
+                play_url = play_url.split('$')[1]
+            # 如果有标识符（如"第01集"），则拼接名称和播放地址
+            if '第' in vod_name:
+                vod_name = f"{vod_name} {play_url}"
+
+            if category not in all_data:
+                all_data[category] = []
+
+            all_data[category].append((vod_name, play_url))
+
+        page += 1
+
+        if page > total_pages:  # 如果抓取完所有页
+            break
+
+    return all_data
+
+def main():
+    """主程序，抓取所有源的数据并保存"""
+    for source in sources:
+        source_name = source["name"]
+        api_url = source["url"]
+        print(f"开始抓取 {source_name} 数据...")
+        all_data = fetch_data_from_source(source_name, api_url)
+        print(f"{source_name} 数据抓取完毕，正在保存...")
+        save_data(source_name, all_data)
+        print(f"{source_name} 数据已保存到 {source_name}.txt\n")
 
 if __name__ == "__main__":
     main()
