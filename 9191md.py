@@ -12,14 +12,19 @@ def fetch_data(page=1):
     }
 
     print(f"正在请求第 {page} 页...")
-    response = requests.get(url, params=params)
-    data = response.json()
-    
-    if response.status_code == 200 and data.get("code") == 1:
-        print(f"成功获取第 {page} 页的数据，解析中...")
-        return data['list']
-    else:
-        print(f"第 {page} 页请求失败，状态码: {response.status_code}")
+    try:
+        response = requests.get(url, params=params)
+        data = response.json()
+
+        # 这里检查响应是否正确
+        if response.status_code == 200 and data.get("code") == 1:
+            print(f"成功获取第 {page} 页的数据")
+            return data['list']
+        else:
+            print(f"第 {page} 页请求失败，状态码: {response.status_code}")
+            return None
+    except Exception as e:
+        print(f"请求发生异常: {e}")
         return None
 
 def save_data(source_name, data):
@@ -29,9 +34,12 @@ def save_data(source_name, data):
         for entry in data:
             vod_name = entry['vod_name']
             play_url = entry['vod_play_url']
-            # 确保标题和链接拼接正确
+            
+            # 处理包含 "第01集" 等标识符的情况
             if '第' in vod_name:
                 vod_name = f"{vod_name} {play_url.split('$')[1]}"  # 拼接标题和播放地址
+
+            # 保存文件
             f.write(f"{vod_name}\n")
     print(f"数据已保存到 {file_name}")
 
@@ -40,13 +48,15 @@ def main():
     all_data = []
     
     # 设置需要抓取的总页数
-    total_pages = 5  # 例如抓取5页，可以根据实际情况设置
+    total_pages = 5  # 你可以调整为合适的值
     
     for page in range(1, total_pages + 1):
         page_data = fetch_data(page)
         if page_data:
             all_data.extend(page_data)  # 将数据添加到总数据列表
-    
+        else:
+            print(f"第 {page} 页没有抓取到数据")
+
     # 保存数据
     if all_data:
         save_data("www.9191md.me", all_data)
