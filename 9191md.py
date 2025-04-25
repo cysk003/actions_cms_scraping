@@ -52,10 +52,12 @@ def fetch_all_pages(base_url, base_params):
                 entries = []
                 for part in vod_play_url.split("$"):
                     if part.strip():
-                        # 如果没有指定名称，则默认使用 vod_name 作为名称
-                        name, url = part.split(",", 1) if "," in part else (vod_name, part.strip())
-                        if url.strip():
-                            entries.append(f"{vod_name}, {url}")
+                        # 处理播放地址和"第01集"等标识符
+                        if "," in part:
+                            name, url = part.split(",", 1)
+                            entries.append(f"{vod_name} {name.strip()}, {url.strip()}")
+                        else:
+                            entries.append(f"{vod_name} {part.strip()}")
 
                 if entries:
                     result.setdefault(type_name, []).extend(entries)
