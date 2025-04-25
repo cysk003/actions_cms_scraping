@@ -73,9 +73,23 @@ def save_grouped_to_file(grouped_data, filename):
         for type_name, items in grouped_data.items():
             f.write(f"{type_name}, #genre#\n")
             for line in items:
-                f.write(f"{line}\n")  # 修复了这里的引号问题
+                f.write(f"{line}\n")  # 确保引号闭合
             f.write("\n")
     print(f"✅ 已保存到文件：{filename}")
 
 def main():
-    #
+    # 修改这里为你的 CMS 播放源地址
+    base_url = "http://www.9191md.me/api.php/provide/vod/"
+    base_params = {
+        "ac": "videolist",  # 修改为 'videolist' 以匹配你的接口
+        "type": "",  # 可指定分类 ID，不填为全部
+        "pg": 1
+    }
+
+    grouped_data = fetch_all_pages(base_url, base_params)
+    domain = get_domain(base_url)
+    filename = f"{domain}.txt"
+    save_grouped_to_file(grouped_data, filename)
+
+if __name__ == "__main__":
+    main()
